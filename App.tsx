@@ -91,11 +91,10 @@ const App: React.FC = () => {
     
     stopCamera();
 
-    const image_data_url = canvas.toDataURL('image/jpeg', 0.9);
-    const base64_image = image_data_url.split(',')[1];
+    const image_data_url = canvas.toDataURL('image/jpeg', 0.8);
 
     try {
-      const classificationResult = await classifyTrash(base64_image);
+      const classificationResult = await classifyTrash(image_data_url);
       if (classificationResult) {
         setResult(classificationResult);
         setAppState('result');

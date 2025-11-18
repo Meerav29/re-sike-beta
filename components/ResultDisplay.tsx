@@ -29,10 +29,11 @@ const getBinDetails = (binType: BinType) => {
 
 const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, onReset }) => {
   const { Icon, color, bgColor, borderColor } = getBinDetails(result.bin);
+  const [showAlternatives, setShowAlternatives] = React.useState(false);
 
   return (
     <div className="w-full h-full flex flex-col justify-between p-4 sm:p-6 md:p-8 bg-gray-900">
-      <div className="flex-grow flex items-center justify-center">
+      <div className="flex-grow flex items-center justify-center overflow-y-auto">
         <div className={`w-full max-w-md bg-gray-800 rounded-3xl shadow-2xl p-6 md:p-8 border border-gray-700 transform transition-all`}>
           <div className="text-center">
             <div className={`mx-auto w-24 h-24 rounded-full bg-${bgColor} border-4 border-${borderColor} flex items-center justify-center mb-6`}>
@@ -41,15 +42,40 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, onReset }) => {
             <p className="text-lg text-gray-400">This is a...</p>
             <h1 className="text-3xl md:text-4xl font-bold text-white capitalize mb-2">{result.itemName}</h1>
             <p className="text-xl md:text-2xl font-semibold text-${color} mb-4">Put it in the {result.bin} bin</p>
-            <div className="bg-gray-700 p-4 rounded-xl text-left">
+            <div className="bg-gray-700 p-4 rounded-xl text-left mb-4">
                 <p className="text-md text-gray-300">{result.reason}</p>
             </div>
+
+            {result.alternatives && result.alternatives.length > 0 && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowAlternatives(!showAlternatives)}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-between"
+                >
+                  <span>Other Disposal & Reuse Ideas</span>
+                  <span className={`transform transition-transform ${showAlternatives ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+
+                {showAlternatives && (
+                  <div className="mt-3 bg-gray-700 p-4 rounded-xl text-left">
+                    <ul className="space-y-2">
+                      {result.alternatives.map((alt, index) => (
+                        <li key={index} className="text-sm text-gray-300 flex items-start">
+                          <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+                          <span>{alt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
       <div className="flex-shrink-0 pt-6 text-center">
-        <button 
-          onClick={onReset} 
+        <button
+          onClick={onReset}
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105"
         >
           Scan Another Item
