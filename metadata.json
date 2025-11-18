@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Recyclopedia",
+  "description": "An interactive web app that uses your device's camera to identify trash and tell you how to recycle it correctly.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
