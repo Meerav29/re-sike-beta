@@ -71,7 +71,7 @@ INVALID if:
     };
 
     const preCheckResult = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.6-flash',
       contents: {
         parts: [imagePart, { text: preCheckPrompt }]
       }
@@ -109,7 +109,7 @@ For alternatives, provide 2-4 creative but practical reuse, upcycling, or proper
 IMPORTANT: Return ONLY the JSON object, no markdown formatting.`;
 
     const classificationResult = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.6-flash',
       contents: {
         parts: [imagePart, { text: classificationPrompt }]
       }

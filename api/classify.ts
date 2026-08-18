@@ -1,16 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Diagnostic checkpoint 1: API key check
-console.log('[CHECKPOINT 1] API Key Status:', GEMINI_API_KEY ? 'Present (length: ' + GEMINI_API_KEY.length + ')' : 'MISSING');
+console.log('[CHECKPOINT 1] API Key Status:', GEMINI_API_KEY ? 'Present' : 'MISSING');
 
 if (!GEMINI_API_KEY) {
   console.error('[ERROR] GEMINI_API_KEY is not set in environment variables');
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || '');
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY || '' });
 
 export default async function handler(
   req: VercelRequest,
@@ -52,8 +52,7 @@ export default async function handler(
     if (!GEMINI_API_KEY) {
       console.log('[ERROR] API key not configured');
       return res.status(500).json({
-        error: 'Server configuration error: API key not set',
-        debug: { envVarsAvailable: Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('API')) }
+        error: 'Server configuration error: API key not set'
       });
     }
 
@@ -76,31 +75,20 @@ export default async function handler(
       estimatedSizeKB: Math.round(base64Data.length * 0.75 / 1024)
     });
 
-    // Test API connection with a simple call
-    console.log('[CHECKPOINT 5] Initializing Gemini API...');
-
-    let model;
-    try {
-      model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash-exp',
-        generationConfig: {
-          temperature: 0.4,
-          topK: 32,
-          topP: 1,
-          maxOutputTokens: 8192,
-        }
-      });
-      console.log('[CHECKPOINT 6] Model initialized successfully');
-    } catch (modelError) {
-      console.error('[ERROR] Failed to initialize model:', modelError);
-      return res.status(500).json({
-        error: 'Failed to initialize AI model',
-        debug: {
-          message: modelError instanceof Error ? modelError.message : 'Unknown error',
-          apiKeyPrefix: GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 10) + '...' : 'none'
-        }
-      });
-    }
+    const modelName = 'gemini-3.6-flash';
+    const generationConfig = {
+      temperature: 0.4,
+      topK: 32,
+      topP: 1,
+      maxOutputTokens: 8192,
+    };
+    const imagePart = {
+      inlineData: {
+        mimeType,
+        data: base64Data
+      }
+    };
+    console.log('[CHECKPOINT 5] Gemini client ready');
 
     // Step 1: Pre-check if the image contains a clear, single trash item
     console.log('[CHECKPOINT 7] Starting pre-check...');
@@ -122,15 +110,11 @@ INVALID if:
 
     let preCheckResult;
     try {
-      preCheckResult = await model.generateContent([
-        {
-          inlineData: {
-            mimeType,
-            data: base64Data
-          }
-        },
-        { text: preCheckPrompt }
-      ]);
+      preCheckResult = await genAI.models.generateContent({
+        model: modelName,
+        contents: { parts: [imagePart, { text: preCheckPrompt }] },
+        config: generationConfig
+      });
       console.log('[CHECKPOINT 8] Pre-check API call successful');
     } catch (apiError) {
       console.error('[ERROR] Pre-check API call failed:', apiError);
@@ -144,7 +128,7 @@ INVALID if:
       });
     }
 
-    const preCheckText = preCheckResult.response.text().trim();
+    const preCheckText = preCheckResult.text.trim();
     console.log('[CHECKPOINT 9] Pre-check result:', preCheckText);
 
     if (preCheckText !== 'VALID') {
@@ -180,15 +164,11 @@ IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks.`;
 
     let classificationResult;
     try {
-      classificationResult = await model.generateContent([
-        {
-          inlineData: {
-            mimeType,
-            data: base64Data
-          }
-        },
-        { text: classificationPrompt }
-      ]);
+      classificationResult = await genAI.models.generateContent({
+        model: modelName,
+        contents: { parts: [imagePart, { text: classificationPrompt }] },
+        config: generationConfig
+      });
       console.log('[CHECKPOINT 11] Classification API call successful');
     } catch (apiError) {
       console.error('[ERROR] Classification API call failed:', apiError);
@@ -202,7 +182,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks.`;
       });
     }
 
-    const responseText = classificationResult.response.text();
+    const responseText = classificationResult.text;
     console.log('[CHECKPOINT 12] Raw AI response (first 200 chars):', responseText.substring(0, 200));
 
     // Try to parse as JSON first
